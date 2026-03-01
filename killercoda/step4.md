@@ -32,15 +32,43 @@ helm repo update
 Now install KEDA:
 
 ```bash
-helm install keda kedacore/keda --namespace keda --wait
+helm install keda kedacore/keda \
+  --namespace keda \
+  --set resources.operator.limits.cpu=100m \
+  --set resources.operator.limits.memory=128Mi \
+  --set resources.operator.requests.cpu=10m \
+  --set resources.operator.requests.memory=64Mi \
+  --set resources.metricServer.limits.cpu=100m \
+  --set resources.metricServer.limits.memory=128Mi \
+  --set resources.metricServer.requests.cpu=10m \
+  --set resources.metricServer.requests.memory=64Mi \
+  --set resources.webhooks.limits.cpu=50m \
+  --set resources.webhooks.limits.memory=64Mi \
+  --set resources.webhooks.requests.cpu=10m \
+  --set resources.webhooks.requests.memory=32Mi \
+  --wait
 ```{{exec}}
 
 ## Install KEDA HTTP Add-on
 
-Install the HTTP Add-on in its own namespace:
+Install the HTTP Add-on:
 
 ```bash
-helm install http-add-on kedacore/keda-add-ons-http --namespace keda-http-addon --wait
+helm install http-add-on kedacore/keda-add-ons-http \
+  --namespace keda-http-addon \
+  --set operator.resources.limits.cpu=100m \
+  --set operator.resources.limits.memory=128Mi \
+  --set operator.resources.requests.cpu=10m \
+  --set operator.resources.requests.memory=64Mi \
+  --set interceptor.resources.limits.cpu=100m \
+  --set interceptor.resources.limits.memory=128Mi \
+  --set interceptor.resources.requests.cpu=10m \
+  --set interceptor.resources.requests.memory=64Mi \
+  --set scaler.resources.limits.cpu=100m \
+  --set scaler.resources.limits.memory=128Mi \
+  --set scaler.resources.requests.cpu=10m \
+  --set scaler.resources.requests.memory=64Mi \
+  --wait
 ```{{exec}}
 
 ## Verify KEDA Installation
