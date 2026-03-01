@@ -14,17 +14,17 @@ If you don't already have a Docker Hub account:
 
 For security, we'll use an access token instead of your password:
 
-1. **Log in to Docker Hub**
+1. **Log in to Docker Hub**: https://hub.docker.com
 
-2. **Click your username** (top-right) → **Account Settings**
+2. **Click your username** (top-right) → **Settings**
 
-3. **Click "Security"** in the left sidebar
+3. **Click "Personal access tokens"** in the left sidebar
 
-4. **Click "New Access Token"**
+4. **Click "Generate new token"**
 
 5. **Configure the token**:
    - **Description**: `GitHub Actions - k8s-preview`
-   - **Permissions**: **Read & Write**
+   - **Access permissions**: **Read & Write**
 
 6. **Click "Generate"**
 
