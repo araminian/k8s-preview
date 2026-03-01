@@ -10,21 +10,49 @@ The Gateway is like the front door to your Kubernetes cluster. It:
 - Accepts traffic for specific hostnames
 - Forwards traffic to VirtualServices
 
-## Expose Istio Ingress Gateway via NodePort
+## Configure Istio Ingress Gateway NodePort
 
-To access services in Killercoda, we need to expose the Istio Ingress Gateway using a NodePort:
+The Istio ingress gateway is already exposed as NodePort, but with random port assignments. Let's configure it to use port 30080 for HTTP traffic:
 
 ```bash
-kubectl patch svc istio-ingressgateway -n istio-system --type='json' -p='[{"op":"replace","path":"/spec/type","value":"NodePort"},{"op":"add","path":"/spec/ports/0/nodePort","value":30080}]'
+kubectl patch svc istio-ingressgateway -n istio-system -p '{
+  "spec": {
+    "ports": [
+      {
+        "name": "status-port",
+        "port": 15021,
+        "protocol": "TCP",
+        "targetPort": 15021,
+        "nodePort": 30021
+      },
+      {
+        "name": "http2",
+        "port": 80,
+        "protocol": "TCP",
+        "targetPort": 8080,
+        "nodePort": 30080
+      },
+      {
+        "name": "https",
+        "port": 443,
+        "protocol": "TCP",
+        "targetPort": 8443,
+        "nodePort": 30443
+      }
+    ]
+  }
+}'
 ```{{exec}}
 
-Verify the NodePort is set:
+Verify the NodePort configuration:
 
 ```bash
 kubectl get svc istio-ingressgateway -n istio-system
 ```{{exec}}
 
-You should see the service type changed to `NodePort` with port `30080`.
+You should see:
+- Port 80 (HTTP) → NodePort 30080
+- Port 443 (HTTPS) → NodePort 30443
 
 ## Create the Gateway
 

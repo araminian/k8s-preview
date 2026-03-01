@@ -13,7 +13,7 @@ Istio is a service mesh that provides:
 
 ## Install Istio
 
-We'll use the minimal profile for this tutorial:
+Download Istio:
 
 ```bash
 curl -L https://istio.io/downloadIstio | sh -
@@ -27,10 +27,19 @@ export PATH=$PWD/bin:$PATH
 cd /root/demo
 ```{{exec}}
 
-Install Istio with the default profile:
+Install Istio with the default profile and adjusted resources:
 
 ```bash
-istioctl install --set profile=default -y
+istioctl install --set profile=default \
+  --set values.pilot.resources.requests.cpu=10m \
+  --set values.pilot.resources.requests.memory=128Mi \
+  --set values.pilot.resources.limits.cpu=200m \
+  --set values.pilot.resources.limits.memory=256Mi \
+  --set values.gateways.istio-ingressgateway.resources.requests.cpu=10m \
+  --set values.gateways.istio-ingressgateway.resources.requests.memory=64Mi \
+  --set values.gateways.istio-ingressgateway.resources.limits.cpu=100m \
+  --set values.gateways.istio-ingressgateway.resources.limits.memory=128Mi \
+  -y
 ```{{exec}}
 
 ## Verify Istio Installation
