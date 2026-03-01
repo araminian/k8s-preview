@@ -212,40 +212,52 @@ You'll see the `version` label with the commit SHA.
 
 ## Testing the Strategy
 
-Let's simulate the bug scenario:
+**⚠️ Note for Killercoda Users**: In the Killercoda environment, you access preview environments through a single NodePort (30080), so you can't fully test the dual-URL strategy here. This section explains the concept for **production environments** where you have proper DNS and can use different hostnames. Consider this as learning the architecture you'd implement in a real-world scenario!
+
+### Understanding the Concept
+
+Let's explore how the dual-URL strategy works in production:
 
 ### Scenario 1: Healthy Deployment (Both URLs Work)
 
-When your code is healthy:
+When your code is healthy in a production environment:
 
-**PR URL**:
+**PR URL** (e.g., `http://todo-123-pr.example.com`):
+```bash
+curl -I http://todo-123-pr.example.com
+# Returns: 200 OK
+```
+
+**Commit URL** (e.g., `http://todo-123-pr-abc1234.example.com`):
+```bash
+curl -I http://todo-123-pr-abc1234.example.com
+# Returns: 200 OK
+```
+
+Both work because pods are healthy!
+
+**In Killercoda**: Both URLs would point to NodePort 30080, so you'd access via:
 ```bash
 curl -I http://localhost:30080
 # Returns: 200 OK
 ```
 
-**Commit URL** (specific version):
-```bash
-# In production, this would be a different hostname
-# In NodePort setup, routing is via headers/paths
-```
+### Scenario 2: Crashing Deployment (The Key Difference)
 
-Both work because pods are healthy!
-
-### Scenario 2: Crashing Deployment
-
-If you push code with a startup crash:
+If you push code with a startup crash in production:
 
 **PR URL**:
 - New pods crash and never become Ready
-- Service routes to old healthy pods
-- ✅ **Users still get service** (good!)
-- ✅ **Tests pass** (BAD! Bug not caught!)
+- Kubernetes Service routes to old healthy pods only
+- ✅ **Users still get service** (good for availability!)
+- ❌ **Tests pass** (BAD! Bug not caught!)
 
 **Commit URL**:
-- Routes directly to new version pods
-- Attempts to hit crashing pods
-- ❌ **Tests fail** (GOOD! Bug caught!)
+- Istio DestinationRule routes directly to new version pods
+- Attempts to hit crashing pods (bypasses Service)
+- ❌ **Tests fail** (GOOD! Bug caught before production!)
+
+**Why this matters**: The Commit URL ensures your automated tests verify the *exact* code you're deploying, catching startup crashes that would otherwise slip through.
 
 ## Practical CI/CD Integration
 

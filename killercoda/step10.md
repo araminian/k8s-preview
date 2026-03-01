@@ -244,10 +244,15 @@ Check:
 # View ApplicationSet status
 kubectl describe applicationset todo-app-preview-environment -n argocd
 
-# Check if PR has 'preview' label
-# Check if GitHub token is valid
-kubectl get secret github-token -n argocd
+# Check if PR has 'preview' label on GitHub
+# Check if your repository is public
 ```
+
+**Common issues**:
+- Repository is private (ArgoCD can't access without token)
+- PR doesn't have the `preview` label
+- GitHub username not updated in ApplicationSet (check both `owner:` and `repoURL:`)
+- ApplicationSet polling interval hasn't elapsed yet (wait up to 90 seconds)
 
 ### Application Shows "OutOfSync"?
 

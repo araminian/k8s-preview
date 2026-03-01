@@ -47,7 +47,7 @@ spec:
       source:
         repoURL: https://github.com/YOUR-GITHUB-USERNAME/k8s-preview.git  # ⚠️ CHANGE THIS!
         targetRevision: preview-{{.number}}
-        path: manifests/preview/{{.number}}
+        path: .
         directory:
           include: '{*.yml,*.yaml}'
       destination:
@@ -99,7 +99,7 @@ template:
   spec:
     source:
       targetRevision: preview-{{.number}}
-      path: manifests/preview/{{.number}}
+      path: .
     destination:
       namespace: preview-{{.number}}-todo-app
 ```
