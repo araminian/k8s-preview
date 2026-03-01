@@ -432,6 +432,19 @@ Hit that `Fork` button in the top right corner of this repository. It's like ado
 
 This repo includes a simple TODO app, but you can swap in your own application. Just replace the Dockerfile and tweak the Helm chart to match your needs.
 
+**Important**: Keep your fork as a **public repository** (this is the default). ArgoCD will be able to read it without authentication.
+
+### Enable GitHub Actions
+
+⚠️ **Critical Step**: After forking, you must enable GitHub Actions!
+
+1. Go to your forked repository on GitHub
+2. Click the **Actions** tab
+3. You'll see: "Workflows aren't being run on this forked repository"
+4. Click the green button: **"I understand my workflows, go ahead and enable them"**
+
+GitHub disables workflows on forks by default for security. Without this step, the preview environment workflow won't run when you create Pull Requests!
+
 ### Configure Docker Hub
 
 You'll need a free Docker Hub account because we're pushing images there. Sign up at the [Docker Hub website](https://docs.docker.com/accounts/create-account/).
@@ -514,6 +527,8 @@ This will give you the username and password. Head over to http://localhost:8080
 ## Taking It for a Spin
 
 Time for the fun part—creating a Pull Request and watching the magic happen!
+
+**Before you start**: Make sure you've enabled GitHub Actions on your fork (see the setup section above). Without this, the workflow won't run!
 
 The TODO app I've included looks like this:
 
