@@ -1,147 +1,185 @@
 # Testing the Preview Environment
 
-Your preview environment is deployed! Let's access it and see your changes in action.
+Your preview environment is deployed! Let's test it and experience KEDA's auto-scaling in action.
 
-## Get Your Preview Environment URL
+**Note**: In Killercoda, you'll test using `curl` from the terminal. For the full browser-based experience with proper DNS and external access, check out the complete tutorial in the repository for running on a local cluster (Minikube/kind).
 
-The GitHub Actions workflow added a comment to your PR with the URLs. Let's find them:
+## Understanding Your Preview URLs
 
-1. **Go to your Pull Request** on GitHub
+Your preview environment has two URLs (replace `PR_NUMBER` with your actual PR number, e.g., 1, 2, 3):
 
-2. **Scroll down to the comments**
+### PR URL
+```
+http://todo-PR_NUMBER-pr.127.0.0.1.sslip.io:30080
+```
+- Routes through KEDA HTTP Interceptor
+- Points to healthy pods only
+- Great for demos and manual testing
 
-3. **Look for the bot comment** that shows:
-   ```
-   Preview Environment URLs:
-   - PR URL: http://todo-{PR_NUMBER}-pr.{IP}.sslip.io
-   - Commit URL: http://todo-{PR_NUMBER}-pr-{SHA}.{IP}.sslip.io
-   ```
+### Commit URL
+```
+http://todo-PR_NUMBER-pr-COMMIT_SHA.127.0.0.1.sslip.io:30080
+```
+- Routes to specific commit version
+- Used for automated testing
+- Ensures tests hit exact deployed code
 
-**Note**: In this tutorial environment, we'll access via NodePort instead since we're using Killercoda.
+## Check Initial Pod State
 
-## Check if Pods are Running
-
-First, let's verify the preview environment pods are running:
+First, let's see if pods are running or scaled to zero:
 
 ```bash
-# Replace PR_NUMBER with your actual PR number (e.g., 1, 2, 3...)
+# Replace PR_NUMBER with your actual PR number (e.g., 1, 2, 3)
 kubectl get pods -n preview-PR_NUMBER-todo-app
 ```{{copy}}
 
 You might see:
-- **No resources found** - KEDA has scaled to zero (expected!)
-- **1 pod Running** - The app is running
-- **Pod ContainerCreating** - It's starting up
+- **No resources found** → KEDA has scaled to zero! ✅
+- **1 pod Running** → App is currently active
+- **Pod ContainerCreating** → Currently scaling up
 
-## Access the Preview Environment
+## Test the PR URL and Watch Scale-Up from Zero!
 
-We'll access the app through the Istio Gateway on NodePort 30080:
-
-[Open Preview Environment]({{TRAFFIC_HOST1_30080}})
-
-Or use curl:
+This is where the magic happens! Let's trigger KEDA to scale from zero:
 
 ```bash
-curl -I http://localhost:30080
-```{{exec}}
+# Replace PR_NUMBER with your actual PR number
+curl -i http://todo-PR_NUMBER-pr.127.0.0.1.sslip.io:30080
+```{{copy}}
 
-## Watch KEDA Scale Up (If Scaled to Zero)
+### What's Happening (Cold Start)
 
-If the deployment was scaled to zero, here's what happens when you access it:
+If the deployment was at zero replicas:
 
 1. **KEDA Interceptor receives your request**
-2. **Holds the request** (you'll see "waiting...")
-3. **Scales the deployment to 1 replica**
-4. **Waits for pod to be ready**
+2. **Holds the request** (you'll see a delay - this is normal!)
+3. **Scales deployment from 0 → 1**
+4. **Waits for pod to be Ready** (~15-30 seconds)
 5. **Forwards your request** to the pod
-6. **You see the application!**
+6. **Returns the response!**
 
-This is called a "cold start" and takes 10-30 seconds.
-
-Watch the pods scale up in real-time:
+Watch the magic happen in another terminal:
 
 ```bash
-# Replace PR_NUMBER with your PR number
+# Watch pods scale up in real-time
 watch kubectl get pods -n preview-PR_NUMBER-todo-app
 ```{{copy}}
 
+You'll see:
+```
+NAME                               READY   STATUS
+preview-todo-app-xxxxx-yyy         0/2     ContainerCreating
+preview-todo-app-xxxxx-yyy         2/2     Running
+```
+
 Press `Ctrl+C` to stop watching.
 
-## Test the Application
+## Test the Commit URL
 
-Once the app loads, you should see:
+Now test the commit-specific URL (check your VirtualService for the exact commit SHA):
 
-✅ **TODO List** heading
-✅ **"Welcome to Preview Environment! 🚀"** greeting (your change!)
-✅ Ability to add TODO items
-✅ Ability to mark items as complete
-✅ Ability to delete items
+```bash
+# Get the commit SHA from the VirtualService
+kubectl get virtualservice -n preview-PR_NUMBER-todo-app -o jsonpath='{.spec.hosts[1]}' && echo
+```{{exec}}
 
-Try it out:
-1. Add a few TODO items
-2. Mark some as complete
-3. Delete some items
-4. Verify everything works!
+```bash
+# Test the commit URL (replace COMMIT_SHA with actual value)
+curl -i http://todo-PR_NUMBER-pr-COMMIT_SHA.127.0.0.1.sslip.io:30080
+```{{copy}}
 
-## Understanding the URLs
+This URL routes directly to your specific commit version, bypassing the service's health checks - crucial for automated testing!
 
-### PR URL (For Humans)
+## Verify the Application is Working
 
-```
-http://todo-{PR_NUMBER}-pr.{IP}.sslip.io
-```
+Let's check the HTML response:
 
-- Routes through **KEDA HTTP Interceptor**
-- Always points to **healthy, ready pods**
-- If new deploy crashes, old version keeps running
-- **Use this** for manual testing and demos
+```bash
+curl -s http://todo-PR_NUMBER-pr.127.0.0.1.sslip.io:30080 | grep -i "welcome"
+```{{copy}}
 
-In our NodePort setup, all traffic goes through port 30080.
+You should see your greeting message: **"Welcome to Preview Environment! 🚀"**
 
-### Commit URL (For Automated Tests)
+## Experience Scale-to-Zero
 
-```
-http://todo-{PR_NUMBER}-pr-{COMMIT_SHA}.{IP}.sslip.io
-```
+Now let's watch KEDA scale back down:
 
-- Routes **directly to specific commit version**
-- Uses Istio DestinationRule with version labels
-- Even if pods are crashing, tests hit them
-- **Use this** for automated integration tests
+### Option 1: Wait for Natural Scale-Down
 
-This ensures tests verify the *exact* code you pushed!
+```bash
+# KEDA will scale down after 5 minutes of inactivity
+# Watch it happen (this takes ~5 minutes)
+watch kubectl get pods -n preview-PR_NUMBER-todo-app
+```{{copy}}
+
+### Option 2: Force Scale-Down (Faster Demo)
+
+```bash
+# Manually scale to zero to see the behavior faster
+kubectl scale deployment preview-todo-app -n preview-PR_NUMBER-todo-app --replicas=0
+```{{copy}}
+
+Verify it's at zero:
+
+```bash
+kubectl get pods -n preview-PR_NUMBER-todo-app
+# Output: No resources found in preview-PR_NUMBER-todo-app namespace.
+```{{exec}}
+
+### Test Scale-Up Again
+
+```bash
+# Send another request - watch KEDA scale back up!
+time curl -i http://todo-PR_NUMBER-pr.127.0.0.1.sslip.io:30080
+```{{exec}}
+
+The `time` command shows how long the cold start takes (~15-30 seconds).
+
+## Want the Full Experience?
+
+**🖥️ For browser access and the complete experience**:
+
+This Killercoda environment is great for learning the architecture, but for the full experience with:
+- Browser-based testing
+- Proper DNS resolution  
+- External access to preview environments
+- Full dual-URL strategy testing
+
+Check out the **complete tutorial in the repository README** for running on a local cluster (Minikube or kind). You'll get the same setup with full browser access!
+
+Repository: https://github.com/araminian/k8s-preview
 
 ## Check the Deployment Details
 
 Let's examine what was deployed:
 
-### View Deployment
+### View Deployment and Image
 
 ```bash
-kubectl get deployment -n preview-PR_NUMBER-todo-app -o yaml | grep -A 5 "image:"
+kubectl get deployment -n preview-PR_NUMBER-todo-app -o yaml | grep -A 3 "image:"
 ```{{copy}}
 
 You'll see your Docker Hub image with the PR tag!
 
-### View VirtualService
+### View VirtualService and URLs
 
 ```bash
-kubectl get virtualservice -n preview-PR_NUMBER-todo-app -o yaml
+kubectl get virtualservice -n preview-PR_NUMBER-todo-app -o yaml | grep -A 5 "hosts:"
 ```{{copy}}
 
-Notice the two hosts (PR URL and Commit URL) routing differently.
+Notice the two hosts (PR URL and Commit URL) with different routing rules.
 
-### View HTTPScaledObject
+### View HTTPScaledObject Configuration
 
 ```bash
-kubectl get httpscaledobject -n preview-PR_NUMBER-todo-app -o yaml
+kubectl get httpscaledobject -n preview-PR_NUMBER-todo-app -o yaml | grep -A 10 "replicas:"
 ```{{copy}}
 
-See the `min: 0` and `max: 2` replica configuration.
+See the `min: 0` and `max: 2` replica configuration that enables scale-to-zero.
 
-## Make Another Change
+## Make Another Change and Test Auto-Deployment
 
-Want to see the preview environment update? Make another commit to your PR branch!
+Want to see the preview environment update automatically? Make another commit!
 
 ### Quick Change Example
 
@@ -154,11 +192,19 @@ Want to see the preview environment update? Make another commit to your PR branc
 
 3. **Commit** to the same branch
 
-4. **Watch**:
-   - GitHub Actions rebuilds
+4. **Watch the automated workflow**:
+   - GitHub Actions rebuilds (~2-3 minutes)
    - New manifests pushed to preview branch
-   - ArgoCD detects change and syncs
+   - ArgoCD detects change and syncs (up to 90 seconds)
    - New version deployed!
+
+5. **Test the update**:
+   ```bash
+   # The deployment might scale to zero between updates
+   curl -s http://todo-PR_NUMBER-pr.127.0.0.1.sslip.io:30080 | grep -i "testing"
+   ```
+
+You should see your new message!
 
 Check ArgoCD UI to see the sync happening:
 
@@ -180,46 +226,56 @@ In the ArgoCD UI:
 
 This is the power of GitOps!
 
-## Test Different Scenarios
+## Additional Testing Scenarios
 
-Try these experiments:
+Try these experiments to understand the system better:
 
-### Scenario 1: Scale to Zero
+### Test KEDA Response Time
 
-1. **Stop accessing the app** for 5 minutes
-2. **Watch pods scale down**:
-   ```bash
-   watch kubectl get pods -n preview-PR_NUMBER-todo-app
-   ```
-3. **Access again** and watch scale up
+```bash
+# Scale to zero first
+kubectl scale deployment preview-todo-app -n preview-PR_NUMBER-todo-app --replicas=0
 
-### Scenario 2: Multiple Commits
+# Time the cold start
+time curl -s http://todo-PR_NUMBER-pr.127.0.0.1.sslip.io:30080 > /dev/null
 
-1. **Push several commits** to your PR
-2. **Watch ArgoCD** auto-sync each one
-3. **See deployment history** in ArgoCD UI
+# Try again (warm - should be instant)
+time curl -s http://todo-PR_NUMBER-pr.127.0.0.1.sslip.io:30080 > /dev/null
+```{{copy}}
 
-### Scenario 3: Resource Inspection
+Compare cold start (~15-30s) vs warm request (~0.1s)!
+
+### Monitor KEDA Interceptor Logs
+
+```bash
+kubectl logs -n keda-http-addon -l app.kubernetes.io/name=keda-add-ons-http-interceptor --tail=20 --follow
+```{{copy}}
+
+Watch KEDA handle requests and scaling decisions. Press `Ctrl+C` to stop.
+
+### Resource Inspection
 
 ```bash
 # See all resources in preview namespace
 kubectl get all -n preview-PR_NUMBER-todo-app
 
-# Describe the HTTPScaledObject
-kubectl describe httpscaledobject -n preview-PR_NUMBER-todo-app
+# Check HTTPScaledObject status
+kubectl describe httpscaledobject -n preview-PR_NUMBER-todo-app | grep -A 10 "Status:"
 
-# View pod logs
+# View pod logs (if running)
 kubectl logs -n preview-PR_NUMBER-todo-app -l app=todo-app --tail=50
 ```{{copy}}
 
 ## Troubleshooting
 
-### Can't Access the App?
+### Can't Access via curl?
 
 **Check pods are running:**
 ```bash
 kubectl get pods -n preview-PR_NUMBER-todo-app
 ```
+
+**If "No resources found"**: This is normal! Send a curl request and wait ~20 seconds for scale-up.
 
 **Check Istio Gateway:**
 ```bash
@@ -227,41 +283,50 @@ kubectl get gateway -n istio-system
 kubectl get virtualservice -n preview-PR_NUMBER-todo-app
 ```
 
-**Check KEDA Interceptor logs:**
+**Check KEDA HTTP Add-on:**
 ```bash
+kubectl get pods -n keda-http-addon
 kubectl logs -n keda-http-addon -l app.kubernetes.io/name=keda-add-ons-http-interceptor --tail=50
 ```
 
-### App Showing Old Version?
+### Connection Refused or Timeout?
 
-**Force ArgoCD to sync:**
+**Verify NodePort is accessible:**
 ```bash
-kubectl patch application todo-app-preview-PR_NUMBER -n argocd \
-  --type merge -p '{"operation":{"initiatedBy":{"username":"admin"},"sync":{"revision":"HEAD"}}}'
+kubectl get svc istio-ingressgateway -n istio-system | grep 30080
 ```
 
-Or click "Sync" in the ArgoCD UI.
-
-### Pods Crashing?
-
-**Check logs:**
+**Check if Istio is routing correctly:**
 ```bash
-kubectl logs -n preview-PR_NUMBER-todo-app -l app=todo-app --tail=100
+curl -I http://localhost:30080
+# Should return Istio response (404 or 200)
 ```
 
-**Check events:**
+### Application Not Working?
+
+**Check ArgoCD sync status:**
 ```bash
-kubectl get events -n preview-PR_NUMBER-todo-app --sort-by='.lastTimestamp'
+kubectl get application -n argocd
+kubectl describe application todo-app-preview-PR_NUMBER -n argocd | grep -A 10 "Status:"
 ```
 
-## Quick Check
+**Force sync if needed:**
+```bash
+# Via kubectl
+kubectl patch application todo-app-preview-PR_NUMBER -n argocd --type merge -p '{"operation":{"initiatedBy":{"username":"admin"},"sync":{}}}'
+```
 
-You should now have:
+Or use the ArgoCD UI: [Open ArgoCD]({{TRAFFIC_HOST1_30081}})
 
-- [ ] Accessed your preview environment
-- [ ] Seen your changes (the greeting message)
-- [ ] Tested the TODO app functionality
-- [ ] Understood PR URL vs Commit URL
-- [ ] (Optional) Made additional commits and saw auto-deployment
+## Summary
 
-Excellent! In the next step, we'll dive deeper into how KEDA auto-scaling works.
+You should now have successfully:
+
+- ✅ Tested your preview environment via curl
+- ✅ Experienced KEDA scale-from-zero (cold start)
+- ✅ Verified your code changes are deployed
+- ✅ Tested both PR URL and Commit URL
+- ✅ Understood the scale-to-zero cost savings
+- ✅ (Optional) Made additional commits and seen auto-deployment
+
+**Next Steps**: Continue to step 12 to dive deeper into KEDA's auto-scaling behavior and cost savings calculations!
