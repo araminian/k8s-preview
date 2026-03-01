@@ -16,7 +16,7 @@ ArgoCD is a declarative GitOps continuous delivery tool for Kubernetes. It:
 Let's install ArgoCD using the official manifests:
 
 ```bash
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 ```{{exec}}
 
 ## Wait for ArgoCD to Be Ready
