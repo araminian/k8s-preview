@@ -16,6 +16,8 @@ And yes, you can run integration tests against these environments too. Because m
 
 This guide is designed for local Kubernetes clusters like Minikube, but don't let that stop you—it'll work on any Kubernetes cluster that's willing to play along.
 
+> **Quick start option:** You can use [Killercoda](https://killercoda.com/armin-aminian/scenario/cost-effective-k8s-preview) for a faster experience with no local setup required. However, I recommend testing on a local Minikube cluster for the best learning experience.
+
 ### The Big Picture
 
 Here's how everything fits together:
