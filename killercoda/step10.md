@@ -1,184 +1,245 @@
-# Creating the ApplicationSet
+# Creating a Pull Request
 
-Now for the final piece: automating preview environment creation with ArgoCD ApplicationSets!
+Time for the exciting part - let's create a Pull Request and watch ArgoCD automatically deploy your preview environment!
 
-## What is an ApplicationSet?
+## Make a Change to the Application
 
-An ApplicationSet is like a template that generates multiple ArgoCD Applications automatically. It:
+Let's modify the TODO application to see the changes in our preview environment.
 
-- Uses **generators** to determine what Applications to create
-- Supports various generator types: Git, PR, Cluster, List, etc.
-- Automatically creates/updates/deletes Applications
-- Perfect for dynamic environments like preview environments!
+### Option 1: Edit on GitHub (Easiest)
 
-## The Pull Request Generator
+1. **Go to your fork** on GitHub:
+   ```
+   https://github.com/YOUR-USERNAME/k8s-preview
+   ```
 
-The PR generator watches GitHub PRs and creates an Application for each:
+2. **Click "Create new branch"** button or go to:
+   ```
+   https://github.com/YOUR-USERNAME/k8s-preview/tree/main/src/components
+   ```
 
-```yaml
-generators:
-- pullRequest:
-    github:
-      owner: araminian
-      repo: k8s-preview
-      labels:
-      - preview  # Only PRs with this label
-    requeueAfterSeconds: 90  # Check every 90s
-```
+3. **Click the branch dropdown** → Type `feature/add-greeting` → Click "Create branch"
 
-## Create the ApplicationSet
+4. **Navigate to** `src/components/Heading.jsx`
 
-Let's examine the ApplicationSet manifest:
+5. **Click the edit button** (pencil icon)
 
-```bash
-cat /root/demo/kubernetes/argocd/applicationSet.yaml
-```{{exec}}
+6. **Modify the component** to add a greeting:
 
-Key sections:
+```jsx
+function Heading() {
+    return (
+        <div className="heading">
+            <h1>Todo List</h1>
+            <h2>Welcome to Preview Environment! 🚀</h2>
+        </div>
+    )
+}
 
-1. **Generator**: Watches PRs with `preview` label
-2. **Template**: Defines how to create each Application
-3. **Source**: Points to the temporary branch `preview-{{.number}}`
-4. **Sync Policy**: Automatically removes Application when PR closes
+export default Heading
+```{{copy}}
 
-## Apply the ApplicationSet
+7. **Commit changes** directly to the `feature/add-greeting` branch
 
-Before applying, we need to create a GitHub token for ArgoCD to access the repository. For this tutorial, we'll use a template configuration:
+### Option 2: Edit Locally (If You Cloned)
 
 ```bash
-cat <<EOF | kubectl apply -f -
-apiVersion: argoproj.io/v1alpha1
-kind: ApplicationSet
-metadata:
-  name: todo-app-preview-environment
-  namespace: argocd
-spec:
-  goTemplate: true
-  syncPolicy:
-    preserveResourcesOnDeletion: false
-  generators:
-  - list:
-      elements:
-      - number: "123"
-        branch: preview-123
-        head_sha: 827f6a4
-  template:
-    metadata:
-      name: todo-app-preview-{{.number}}
-      labels:
-        environment: preview
-        app: todo-app
-    spec:
-      project: default
-      source:
-        repoURL: https://github.com/araminian/k8s-preview.git
-        targetRevision: {{.branch}}
-        path: manifests/preview/{{.number}}
-        directory:
-          include: '{*.yml,*.yaml}'
-      destination:
-        server: https://kubernetes.default.svc
-        namespace: preview-{{.number}}-todo-app
-      syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
-        syncOptions:
-        - CreateNamespace=true
-EOF
-```{{exec}}
+# Create a new branch
+git checkout -b feature/add-greeting
 
-**Note**: In production, you'd use the `pullRequest` generator with proper GitHub credentials. For this tutorial, we're using a `list` generator with a simulated PR.
+# Edit the file
+vi src/components/Heading.jsx
 
-## Verify the ApplicationSet
+# Make the same changes as above
 
-Check that it was created:
+# Commit and push
+git add src/components/Heading.jsx
+git commit -m "Add greeting to preview environment"
+git push origin feature/add-greeting
+```{{copy}}
 
-```bash
-kubectl get applicationset -n argocd
-```{{exec}}
+## Create the Pull Request
 
-## Watch Applications Being Created
+1. **Go to your repository** on GitHub
 
-The ApplicationSet will generate Application resources:
+2. **Click "Pull requests"** tab
 
-```bash
-kubectl get application -n argocd
-```{{exec}}
+3. **Click "New pull request"**
 
-You should see `todo-app-preview-123`!
+4. **Select branches**:
+   - **base**: `main`
+   - **compare**: `feature/add-greeting`
 
-## Check Application Details
+5. **Click "Create pull request"**
 
-View the generated Application:
+6. **Fill in the PR**:
+   - **Title**: `Add greeting to TODO app`
+   - **Description**: 
+     ```
+     ## Changes
+     - Added a welcome message to the heading
+     - This PR will create a preview environment
+     
+     ## Testing
+     - Check that the greeting appears in the preview environment
+     - Verify the TODO app still functions correctly
+     ```
 
-```bash
-kubectl get application todo-app-preview-123 -n argocd -o yaml
-```{{exec}}
+7. **Click "Create pull request"**
 
-Notice:
-- Source points to the preview branch
-- Destination creates a unique namespace
-- Auto-sync is enabled
+## Watch GitHub Actions Build the Image
 
-## Understanding the Workflow
+After creating the PR, GitHub Actions will automatically trigger:
 
-```
-1. Developer creates PR
-   ↓
-2. GitHub Action adds "preview" label
-   ↓
-3. GitHub Action builds & pushes image
-   ↓
-4. GitHub Action renders manifests → preview-123 branch
-   ↓
-5. ApplicationSet detects new PR
-   ↓
-6. Creates Application for PR #123
-   ↓
-7. ArgoCD syncs manifests from preview-123 branch
-   ↓
-8. Preview environment deployed!
-   ↓
-9. PR merged/closed → Application deleted
-   ↓
-10. Preview environment cleaned up!
-```
+1. **Go to the "Actions" tab** in your repository
 
-## Access ArgoCD UI
+2. **Click on the running workflow** (it should say "CI Preview")
 
-Let's see this in the ArgoCD UI. Open it here:
+3. **Watch the workflow run**:
+   - ✅ Build Docker image
+   - ✅ Push to Docker Hub
+   - ✅ Render Kubernetes manifests
+   - ✅ Push manifests to `preview-{PR_NUMBER}` branch
+   - ✅ Add `preview` label to PR
+
+This usually takes **2-3 minutes**.
+
+## Check the Preview Label
+
+Once the GitHub Action completes:
+
+1. **Go back to your Pull Request**
+
+2. **Look at the labels** - you should see a `preview` label
+
+3. **Check the comments** - the workflow adds a comment with:
+   - PR URL (for testing)
+   - Commit URL (for automated tests)
+
+## Watch ArgoCD Deploy
+
+Now let's watch ArgoCD automatically deploy the preview environment!
+
+### Check in ArgoCD UI
 
 [Open ArgoCD UI]({{TRAFFIC_HOST1_30081}})
 
-Get the password if you need it again:
+1. **Wait up to 90 seconds** (ArgoCD polls every 90 seconds)
+
+2. **You'll see a new Application** appear:
+   ```
+   todo-app-preview-{YOUR_PR_NUMBER}
+   ```
+
+3. **Click on the Application** to see:
+   - Sync status
+   - All deployed resources
+   - Visual representation of your app
+
+### Check via kubectl
+
+You can also check from the command line:
 
 ```bash
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
+# List all ArgoCD Applications
+kubectl get application -n argocd
 ```{{exec}}
 
-Log in with:
-- Username: `admin`
-- Password: (from above)
+You should see your preview environment application!
 
-You'll see the `todo-app-preview-123` application! Click on it to explore:
-- The sync status
-- The resources deployed
-- The health of each component
-- A visual representation of the architecture
+```bash
+# Check the preview namespace was created
+kubectl get ns | grep preview
+```{{exec}}
 
-## Benefits of ApplicationSet
+```bash
+# Check pods in your preview namespace (replace PR_NUMBER)
+kubectl get pods -n preview-PR_NUMBER-todo-app
+```{{copy}}
 
-1. **No manual Application creation** - Automatic for every PR
-2. **Automatic cleanup** - Applications deleted when PR closes
-3. **Consistent configuration** - All preview environments use same template
-4. **GitOps compliance** - Everything in Git, nothing manual
+## Understanding What Got Deployed
 
-## Cleanup Behavior
+ArgoCD deployed all these resources:
 
-When a PR is closed:
-- ApplicationSet removes the Application
-- ArgoCD deletes all resources in the namespace
-- No manual cleanup needed!
+### Namespace
+```bash
+kubectl get ns preview-PR_NUMBER-todo-app
+```{{copy}}
 
-Perfect! You now understand how to fully automate preview environments with ArgoCD ApplicationSets!
+### Deployment
+```bash
+kubectl get deployment -n preview-PR_NUMBER-todo-app
+```{{copy}}
+
+### Service
+```bash
+kubectl get svc -n preview-PR_NUMBER-todo-app
+```{{copy}}
+
+### VirtualService (Istio)
+```bash
+kubectl get virtualservice -n preview-PR_NUMBER-todo-app
+```{{copy}}
+
+### DestinationRule (Istio)
+```bash
+kubectl get destinationrule -n preview-PR_NUMBER-todo-app
+```{{copy}}
+
+### HTTPScaledObject (KEDA)
+```bash
+kubectl get httpscaledobject -n preview-PR_NUMBER-todo-app
+```{{copy}}
+
+## The Preview Branch
+
+GitHub Actions created a branch with your manifests:
+
+1. **Go to your repository** on GitHub
+
+2. **Click the "branches" dropdown**
+
+3. **You'll see**: `preview-{PR_NUMBER}`
+
+4. **Click on it** to see the rendered manifests in `manifests/preview/{PR_NUMBER}/`
+
+This is what ArgoCD is deploying from!
+
+## Troubleshooting
+
+### GitHub Action Failed?
+
+Check the workflow logs:
+- **Actions** tab → Click the failed workflow
+- Common issues:
+  - Docker Hub credentials incorrect
+  - `skaffold.yaml` has wrong Docker Hub username
+  - Network issues
+
+### ApplicationSet Not Creating Application?
+
+Check:
+```bash
+# View ApplicationSet status
+kubectl describe applicationset todo-app-preview-environment -n argocd
+
+# Check if PR has 'preview' label
+# Check if GitHub token is valid
+kubectl get secret github-token -n argocd
+```
+
+### Application Shows "OutOfSync"?
+
+This is normal! Click "Sync" in the ArgoCD UI, or it will auto-sync shortly.
+
+## Quick Check
+
+You should now have:
+
+- [ ] Created a Pull Request
+- [ ] GitHub Action completed successfully
+- [ ] PR has the `preview` label
+- [ ] ArgoCD Application created (todo-app-preview-{PR_NUMBER})
+- [ ] Resources deployed to preview namespace
+
+Next, let's access and test your preview environment!

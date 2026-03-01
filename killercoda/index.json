@@ -38,22 +38,33 @@
         "verify": "verify-step6.sh"
       },
       {
-        "title": "Deploying a Preview Environment",
-        "text": "step7.md",
-        "verify": "verify-step7.sh"
+        "title": "Forking the Repository and Setup",
+        "text": "step7.md"
       },
       {
-        "title": "Testing Auto-Scaling to Zero",
+        "title": "Configuring Docker Hub Access",
         "text": "step8.md"
       },
       {
-        "title": "Understanding the Dual-URL Strategy",
-        "text": "step9.md"
+        "title": "Creating the ApplicationSet",
+        "text": "step9.md",
+        "verify": "verify-step9.sh"
       },
       {
-        "title": "Creating the ApplicationSet",
-        "text": "step10.md",
-        "verify": "verify-step10.sh"
+        "title": "Creating a Pull Request",
+        "text": "step10.md"
+      },
+      {
+        "title": "Testing the Preview Environment",
+        "text": "step11.md"
+      },
+      {
+        "title": "Understanding Auto-Scaling to Zero",
+        "text": "step12.md"
+      },
+      {
+        "title": "Understanding the Dual-URL Strategy",
+        "text": "step13.md"
       }
     ],
     "finish": {

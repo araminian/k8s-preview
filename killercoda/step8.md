@@ -1,138 +1,170 @@
-# Testing Auto-Scaling to Zero
+# Configuring Docker Hub Access
 
-Let's watch KEDA in action! This is where the cost-saving magic happens.
+For GitHub Actions to push Docker images, we need to configure Docker Hub credentials as GitHub Secrets.
 
-## Initial State
+## Create a Docker Hub Account
 
-First, check the current replica count:
+If you don't already have a Docker Hub account:
 
-```bash
-kubectl get deployment preview-todo-app -n preview-123-todo-app
-```{{exec}}
+1. Go to [Docker Hub](https://hub.docker.com/signup)
+2. Create a free account
+3. Verify your email address
 
-You should see 1 replica running.
+## Create a Docker Hub Access Token
 
-## Watch the Pods
+For security, we'll use an access token instead of your password:
 
-Let's watch the pods in real-time (this will run in the background):
+1. **Log in to Docker Hub**
 
-```bash
-watch -n 2 'kubectl get pods -n preview-123-todo-app' &
-```{{exec}}
+2. **Click your username** (top-right) → **Account Settings**
 
-## Wait for Scale Down
+3. **Click "Security"** in the left sidebar
 
-KEDA is configured to scale down after 5 minutes (300 seconds) of inactivity. Since we haven't sent much traffic, let's force a scale down to see the behavior faster.
+4. **Click "New Access Token"**
 
-First, let's scale to zero manually to demonstrate:
+5. **Configure the token**:
+   - **Description**: `GitHub Actions - k8s-preview`
+   - **Permissions**: **Read & Write**
 
-```bash
-kubectl scale deployment preview-todo-app -n preview-123-todo-app --replicas=0
-```{{exec}}
+6. **Click "Generate"**
 
-Now check the pods:
+7. **Copy the token** immediately (you won't see it again!)
 
-```bash
-kubectl get pods -n preview-123-todo-app
-```{{exec}}
+## Add Secrets to Your GitHub Repository
 
-You should see "No resources found" - the deployment has scaled to zero!
+Now add the Docker Hub credentials to your forked repository:
 
-## Verify Zero Replicas
+1. **Go to your fork** on GitHub:
+   ```
+   https://github.com/YOUR-USERNAME/k8s-preview
+   ```
 
-Confirm the deployment is at 0 replicas:
+2. **Click "Settings"** (top menu)
 
-```bash
-kubectl get deployment preview-todo-app -n preview-123-todo-app -o jsonpath='{.status.replicas}'
-echo
-```{{exec}}
+3. **Click "Secrets and variables"** → **"Actions"** (left sidebar)
 
-## Trigger Scale-Up with Real Traffic
+4. **Click "New repository secret"**
 
-Now let's send a request to trigger KEDA to scale up the deployment. Access the app:
+### Add DOCKERHUB_USERNAME
 
-[Access TODO App]({{TRAFFIC_HOST1_30080}})
+5. **Add the first secret**:
+   - **Name**: `DOCKERHUB_USERNAME`
+   - **Value**: Your Docker Hub username
+   - **Click "Add secret"**
 
-Or use curl:
+### Add DOCKERHUB_TOKEN
 
-```bash
-curl -s http://localhost:30080 | head -20
-```{{exec}}
+6. **Add the second secret**:
+   - **Name**: `DOCKERHUB_TOKEN`
+   - **Value**: The access token you copied earlier
+   - **Click "Add secret"**
 
-## Watch the Scale-Up
+## Update skaffold.yaml with Your Docker Hub Username
 
-Check the pods again:
+The repository needs to know where to push Docker images.
 
-```bash
-kubectl get pods -n preview-123-todo-app
-```{{exec}}
+### Option 1: Edit on GitHub
 
-You should see KEDA has scaled the deployment back up! The pod will be in `ContainerCreating` or `Running` state.
+1. **Go to your fork** on GitHub
 
-## Understanding Scale-Up Flow
+2. **Navigate to `skaffold.yaml`** in the root
 
-When a request arrives at the scaled-to-zero deployment:
+3. **Click the edit button** (pencil icon)
 
-1. **KEDA Interceptor receives the request**
-2. **Checks if deployment is at 0 replicas**
-3. **If yes, holds the request and scales deployment to 1**
-4. **Waits for pod to be ready** (this is the "cold start")
-5. **Forwards the request to the pod**
-6. **User receives response**
+4. **Find this section**:
+   ```yaml
+   build:
+     artifacts:
+       - image: araminian/todo-app  # Change this!
+   ```
 
-The first request after scale-up takes longer (cold start), but subsequent requests are fast!
+5. **Replace** `araminian` with **your Docker Hub username**:
+   ```yaml
+   build:
+     artifacts:
+       - image: YOUR-DOCKERHUB-USERNAME/todo-app
+   ```
 
-## Monitor Scale-Up
+6. **Commit directly** to the main branch
 
-Watch the pod become ready:
-
-```bash
-kubectl wait --for=condition=ready pod -l app=todo-app -n preview-123-todo-app --timeout=120s
-```{{exec}}
-
-## Access the Running App
-
-Now that it's scaled up, access it again:
-
-[Access TODO App]({{TRAFFIC_HOST1_30080}})
-
-The response should be faster since the pod is already running!
-
-## Check HTTPScaledObject Status
-
-The HTTPScaledObject tracks the scaling state:
+### Option 2: Edit Locally (if you cloned)
 
 ```bash
-kubectl get httpscaledobject -n preview-123-todo-app -o yaml | grep -A 10 status
-```{{exec}}
+# Edit skaffold.yaml
+vi skaffold.yaml  # or use your preferred editor
 
-## Key Observations
+# Change:
+# - image: araminian/todo-app
+# To:
+# - image: YOUR-DOCKERHUB-USERNAME/todo-app
 
-- **Scaling to zero saves resources** - No pods running means no CPU/memory consumed
-- **Scale-up is automatic** - First request triggers the scale-up
-- **Cold start delay** - Users experience a brief delay on first request after scale-down
-- **Configurable timing** - You control the `scaledownPeriod` (default: 300s)
+# Commit and push
+git add skaffold.yaml
+git commit -m "Update Docker Hub username"
+git push origin main
+```{{copy}}
 
-## Calculate Cost Savings
+## Verify Configuration
 
-If you have 100 preview environments that are:
-- Idle 20 hours per day
-- Active 4 hours per day
+Let's make sure everything is configured correctly:
 
-**Without KEDA:** `100 PRs × 24 hours = 2400 pod-hours/day`
+### Check GitHub Secrets
 
-**With KEDA:** `100 PRs × 4 hours = 400 pod-hours/day`
+1. Go to **Settings** → **Secrets and variables** → **Actions**
+2. You should see:
+   - ✅ `DOCKERHUB_USERNAME`
+   - ✅ `DOCKERHUB_TOKEN`
 
-**Savings: 83%!** 🎉
+### Check skaffold.yaml
 
-This is why KEDA is essential for cost-effective preview environments.
+1. Open `skaffold.yaml` in your fork
+2. Verify the image name contains **your username**:
+   ```yaml
+   - image: YOUR-USERNAME/todo-app
+   ```
 
-## Stop the Watch Process
+## How GitHub Actions Uses These Secrets
 
-Stop the background watch process:
+When you open a Pull Request, the workflow (`.github/workflows/ci-preview.yaml`) will:
 
-```bash
-pkill -f "watch.*kubectl get pods"
-```{{exec}}
+```yaml
+- name: Log in to Docker Hub
+  uses: docker/login-action@v2
+  with:
+    username: ${{ secrets.DOCKERHUB_USERNAME }}
+    password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-Let's move on to understand why we need dual URLs!
+- name: Build and push Docker image
+  run: |
+    skaffold build --file-output=build.json
+```
+
+The workflow:
+1. **Authenticates** with Docker Hub using your secrets
+2. **Builds** the Docker image
+3. **Tags** it with the PR number and commit SHA
+4. **Pushes** it to your Docker Hub account
+
+## Understanding the Image Tags
+
+Images will be tagged as:
+- `YOUR-USERNAME/todo-app:pr-123` (PR number)
+- `YOUR-USERNAME/todo-app:pr-123-abc1234` (PR + commit SHA)
+
+This allows:
+- Multiple PRs to coexist
+- Each commit to have its own image
+- ArgoCD to deploy the exact version
+
+## Quick Check
+
+Make sure you have:
+
+- [ ] Created a Docker Hub account
+- [ ] Generated an access token
+- [ ] Added `DOCKERHUB_USERNAME` secret to GitHub
+- [ ] Added `DOCKERHUB_TOKEN` secret to GitHub
+- [ ] Updated `skaffold.yaml` with your Docker Hub username
+- [ ] Committed the changes to your fork
+
+Perfect! Now we can create the ArgoCD ApplicationSet in the next step.

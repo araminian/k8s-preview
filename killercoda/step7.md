@@ -1,129 +1,108 @@
-# Deploying a Preview Environment
+# Forking the Repository and Setup
 
-Now comes the exciting part! Let's manually deploy a preview environment to understand how everything works together.
+Now that our Kubernetes infrastructure is ready, let's set up your own GitHub repository to create real preview environments with Pull Requests!
 
-## Prepare the Manifests
+## Why Fork the Repository?
 
-In a real workflow, GitHub Actions would render these manifests. For this tutorial, we'll use a pre-rendered manifest for PR #123:
+To create preview environments from Pull Requests, you need:
+- Your own GitHub repository to open PRs against
+- GitHub Actions that build and push Docker images
+- Ability to configure secrets for Docker Hub access
 
-```bash
-cd /root/demo
-ls -la manifests/preview/123/
-```{{exec}}
+## Fork the Repository
 
-## Examine the Manifest
+1. **Open the repository** in a new browser tab:
 
-Let's look at what will be deployed:
+[Fork the Demo Repository](https://github.com/araminian/k8s-preview)
 
-```bash
-cat manifests/preview/123/manifests.yaml | head -50
-```{{exec}}
+2. **Click the "Fork" button** in the top-right corner
 
-Notice the structure:
-- A unique namespace: `preview-123-todo-app`
-- Labels with PR number and commit hash
-- Deployment, Service, VirtualService, DestinationRule, and HTTPScaledObject
+3. **Select your GitHub account** as the destination
 
-## Deploy the Preview Environment
+4. **Wait for the fork to complete**
 
-Apply the manifest:
+You now have your own copy at: `https://github.com/YOUR-USERNAME/k8s-preview`
 
-```bash
-kubectl apply -f manifests/preview/123/manifests.yaml
-```{{exec}}
+## Clone Your Fork Locally (Optional)
 
-## Verify the Deployment
-
-Check the namespace:
+If you want to make changes locally and push them:
 
 ```bash
-kubectl get ns | grep preview-123
-```{{exec}}
+# Replace YOUR-USERNAME with your GitHub username
+git clone https://github.com/YOUR-USERNAME/k8s-preview.git
+cd k8s-preview
+```{{copy}}
 
-Check all resources in the preview namespace:
+**Note**: For this tutorial, you can also make changes directly in the GitHub web interface.
 
-```bash
-kubectl get all -n preview-123-todo-app
-```{{exec}}
+## Understanding the Repository Structure
 
-## Check KEDA HTTPScaledObject
+Let's explore what's in the repository:
 
-Verify the HTTPScaledObject was created:
+### Application Code
+```
+src/                    # React TODO application
+├── components/         # UI components
+├── App.jsx            # Main application
+└── ...
+```
 
-```bash
-kubectl get httpscaledobject -n preview-123-todo-app
-```{{exec}}
+### Kubernetes Configuration
+```
+kubernetes/
+├── charts/todo-app/   # Helm chart for the application
+├── argocd/           # ArgoCD ApplicationSet
+└── istio/            # Istio Gateway
+```
 
-Get more details:
+### GitHub Actions Workflow
+```
+.github/workflows/
+└── ci-preview.yaml    # Builds image and renders manifests
+```
 
-```bash
-kubectl describe httpscaledobject -n preview-123-todo-app
-```{{exec}}
+## How the Workflow Works
 
-## Check Istio VirtualService
+When you open a Pull Request:
 
-Verify the VirtualService:
+1. **GitHub Action triggers** (`.github/workflows/ci-preview.yaml`)
+2. **Builds Docker image** with PR number as tag
+3. **Pushes image to Docker Hub**
+4. **Renders Kubernetes manifests** using Skaffold
+5. **Pushes manifests** to a temporary branch (`preview-{PR_NUMBER}`)
+6. **Adds `preview` label** to the PR
+7. **ArgoCD ApplicationSet detects** the new PR
+8. **Deploys preview environment** automatically!
 
-```bash
-kubectl get virtualservice -n preview-123-todo-app
-```{{exec}}
+## The TODO Application
 
-View the routing rules:
+The demo application is a simple TODO list built with:
+- **Frontend**: React + Vite
+- **Styling**: CSS
+- **No backend**: Uses local storage
 
-```bash
-kubectl get virtualservice -n preview-123-todo-app -o yaml
-```{{exec}}
+It's perfect for demonstrating preview environments because:
+- Quick to build (~30 seconds)
+- Small Docker image size
+- Easy to see changes visually
+- No database dependencies
 
-## Wait for Pods to Be Ready
+## What You'll Need Next
 
-The deployment will start with 1 replica. Let's wait for it to be ready:
+Before we can create preview environments, you need to:
 
-```bash
-kubectl wait --for=condition=ready pod -l app=todo-app -n preview-123-todo-app --timeout=120s
-```{{exec}}
+1. ✅ **Fork the repository** (you just did this!)
+2. ⏭️ **Configure Docker Hub** (next step)
+3. ⏭️ **Create ApplicationSet** in ArgoCD
+4. ⏭️ **Open a Pull Request**
+5. ⏭️ **Watch ArgoCD deploy it!**
 
-## Access the Preview Environment
+## Quick Check
 
-Now you can access the TODO app through the Istio Gateway exposed on NodePort 30080!
+Make sure you have:
 
-**Access the PR URL:**
+- [ ] Forked the repository to your GitHub account
+- [ ] Noted your fork URL: `https://github.com/YOUR-USERNAME/k8s-preview`
+- [ ] (Optional) Cloned it locally if you prefer
 
-[Open TODO App - PR URL]({{TRAFFIC_HOST1_30080}})
-
-You can also access it via command line:
-
-```bash
-curl -s http://localhost:30080 | grep -o "<title>.*</title>"
-```{{exec}}
-
-**Note**: The preview environment routes through KEDA's HTTP interceptor, which manages the auto-scaling.
-
-## Understanding the URLs
-
-In this tutorial environment, we're accessing via NodePort. In a real environment with proper DNS:
-
-1. **PR URL**: `todo-123-pr.example.com` → Routes through KEDA
-2. **Commit URL**: `todo-123-pr-827f6a4.example.com` → Direct to specific version
-
-Both URLs work through the same Gateway, but with different routing rules.
-
-## Understanding the Deployment
-
-The deployment starts with replicas set to 1, but KEDA will manage the scaling based on traffic.
-
-Check the deployment details:
-
-```bash
-kubectl get deployment -n preview-123-todo-app
-```{{exec}}
-
-## What Happens Next?
-
-1. KEDA monitors the HTTPScaledObject
-2. If no traffic arrives, it scales the deployment to 0
-3. When a request comes in, KEDA scales it back up
-4. After 5 minutes of inactivity, it scales down again
-
-Let's test this in the next step!
-
-Your preview environment is now deployed and accessible!
+Ready? Let's configure Docker Hub access in the next step!
