@@ -29,13 +29,21 @@ kubectl wait --for=condition=Ready pods --all -n argocd --timeout=300s
 
 ## Configure ArgoCD for Insecure Access
 
-For this tutorial environment, we need to configure ArgoCD to run without TLS (insecure mode) to avoid redirect loops:
+For this tutorial environment, we need to configure ArgoCD to run without TLS (insecure mode) to avoid redirect loops.
+
+First, let's add the insecure flag using kubectl set:
 
 ```bash
-kubectl patch deployment argocd-server -n argocd --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/command/-","value":"--insecure"}]'
+kubectl patch configmap argocd-cmd-params-cm -n argocd --type merge -p '{"data":{"server.insecure":"true"}}'
 ```{{exec}}
 
-Wait for the ArgoCD server to restart:
+Now restart the ArgoCD server to apply the changes:
+
+```bash
+kubectl rollout restart deployment argocd-server -n argocd
+```{{exec}}
+
+Wait for the ArgoCD server to be ready:
 
 ```bash
 kubectl rollout status deployment/argocd-server -n argocd --timeout=120s
