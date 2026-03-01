@@ -11,42 +11,11 @@ For preview environments, we use the **Pull Request generator** which:
 - Creates an Application for each PR with the `preview` label
 - Automatically deletes the Application when the PR is closed/merged
 
-## Create GitHub Personal Access Token for ArgoCD
-
-ArgoCD needs access to your GitHub repository to watch for Pull Requests.
-
-### Generate the Token
-
-1. **Go to GitHub Settings**: https://github.com/settings/tokens
-
-2. **Click "Generate new token"** → **"Generate new token (classic)"**
-
-3. **Configure the token**:
-   - **Note**: `ArgoCD Preview Environments`
-   - **Expiration**: 90 days (or your preference)
-   - **Select scopes**:
-     - ✅ `repo` (Full control of private repositories)
-     - ✅ `admin:repo_hook` (if using webhooks)
-
-4. **Click "Generate token"**
-
-5. **Copy the token** immediately!
-
-### Create Kubernetes Secret for ArgoCD
-
-Store the GitHub token as a Kubernetes secret:
-
-```bash
-kubectl create secret generic github-token \
-  -n argocd \
-  --from-literal=token=YOUR_GITHUB_TOKEN_HERE
-```{{copy}}
-
-**Replace `YOUR_GITHUB_TOKEN_HERE`** with the token you just copied.
-
 ## Create the ApplicationSet
 
-Now let's create the ApplicationSet that watches for Pull Requests:
+Let's create the ApplicationSet that watches for Pull Requests in your forked repository.
+
+**Important**: Make sure your forked repository is **public**. ArgoCD can read public repositories without authentication.
 
 ```bash
 cat <<EOF | kubectl apply -f -
@@ -64,9 +33,6 @@ spec:
       github:
         owner: YOUR-GITHUB-USERNAME  # ⚠️ CHANGE THIS!
         repo: k8s-preview
-        tokenRef:
-          secretName: github-token
-          key: token
         labels:
         - preview
       requeueAfterSeconds: 90
@@ -78,6 +44,29 @@ spec:
         app: todo-app
     spec:
       project: default
+      source:
+        repoURL: https://github.com/YOUR-GITHUB-USERNAME/k8s-preview.git  # ⚠️ CHANGE THIS!
+        targetRevision: preview-{{.number}}
+        path: manifests/preview/{{.number}}
+        directory:
+          include: '{*.yml,*.yaml}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: preview-{{.number}}-todo-app
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
+EOF
+```{{copy}}
+
+**⚠️ IMPORTANT**: Replace `YOUR-GITHUB-USERNAME` with your actual GitHub username in **TWO places**:
+1. Line with `owner:`
+2. Line with `repoURL:`
+
+**Note**: Since your repository is public, ArgoCD doesn't need authentication to read it. The Pull Request generator will poll GitHub's public API.
       source:
         repoURL: https://github.com/YOUR-GITHUB-USERNAME/k8s-preview.git  # ⚠️ CHANGE THIS!
         targetRevision: preview-{{.number}}
@@ -233,9 +222,8 @@ In the UI, you'll see the ApplicationSet listed. Once you create a PR in the nex
 
 Make sure you have:
 
-- [ ] Created GitHub Personal Access Token
-- [ ] Stored token as Kubernetes secret
-- [ ] Created ApplicationSet with **your GitHub username**
+- [ ] Verified your forked repository is **public**
+- [ ] Created ApplicationSet with **your GitHub username** (in TWO places)
 - [ ] Verified ApplicationSet exists in ArgoCD
 
 Excellent! Now let's create a Pull Request and watch the magic happen!

@@ -19,7 +19,11 @@ To create preview environments from Pull Requests, you need:
 
 3. **Select your GitHub account** as the destination
 
-4. **Wait for the fork to complete**
+4. **IMPORTANT: Keep the repository public** (this is the default)
+   - ArgoCD will read from your public repository without authentication
+   - If you make it private, you'll need to configure additional credentials
+
+5. **Wait for the fork to complete**
 
 You now have your own copy at: `https://github.com/YOUR-USERNAME/k8s-preview`
 

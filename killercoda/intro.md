@@ -47,13 +47,12 @@ You'll need to create **free accounts** for:
 ### What You'll Do
 
 During this tutorial, you will:
-- ✅ Fork a GitHub repository to your account
+- ✅ Fork a GitHub repository to your account (as public)
 - ✅ Configure Docker Hub credentials as GitHub secrets
-- ✅ Create a GitHub Personal Access Token for ArgoCD
 - ✅ Make code changes and open Pull Requests
 - ✅ Watch automated deployments happen in real-time
 
-**Time commitment**: 60-90 minutes for the complete tutorial
+**Time commitment**: 45-60 minutes for the complete tutorial
 
 **Note**: All accounts are free and don't require payment information.
 
