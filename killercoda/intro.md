@@ -9,20 +9,53 @@ In this hands-on tutorial, you'll learn how to create **cost-effective preview e
 
 ## What You'll Learn
 
-By the end of this tutorial, you'll understand:
+By the end of this tutorial, you'll have hands-on experience with:
 
-1. How to use **ArgoCD ApplicationSets** to dynamically create preview environments
-2. How **KEDA HTTP Add-on** scales applications to zero and back
-3. How **Istio** routes traffic to preview environments
-4. Why you need **two URLs** (PR URL and Commit URL) for proper testing
-5. How to integrate this into your CI/CD pipeline
+1. **Forking and configuring** a real GitHub repository for preview environments
+2. **Setting up Docker Hub** integration for automated image builds
+3. **Installing and configuring** ArgoCD, KEDA, and Istio on Kubernetes
+4. **Creating ArgoCD ApplicationSets** that automatically deploy PRs
+5. **Opening Pull Requests** and watching them auto-deploy
+6. **Understanding KEDA HTTP Add-on** for cost-effective scaling to zero
+7. **Implementing dual-URL strategy** for proper testing
+8. **Integrating the complete workflow** into your CI/CD pipeline
+
+You'll build a **complete, production-ready preview environment system** using your own GitHub and Docker Hub accounts!
 
 ## Prerequisites
 
-This tutorial assumes you have:
+This tutorial requires:
+
+### Knowledge Prerequisites
 - Basic knowledge of Kubernetes (Pods, Deployments, Services)
 - Familiarity with Git and Pull Requests
 - Understanding of basic YAML syntax
+- Basic understanding of Docker containers
+
+### Account Requirements
+
+You'll need to create **free accounts** for:
+
+1. **GitHub Account** (if you don't have one)
+   - Sign up at: https://github.com/signup
+   - Needed to: Fork the demo repository and open Pull Requests
+
+2. **Docker Hub Account** (if you don't have one)
+   - Sign up at: https://hub.docker.com/signup
+   - Needed to: Store Docker images built by GitHub Actions
+
+### What You'll Do
+
+During this tutorial, you will:
+- ✅ Fork a GitHub repository to your account
+- ✅ Configure Docker Hub credentials as GitHub secrets
+- ✅ Create a GitHub Personal Access Token for ArgoCD
+- ✅ Make code changes and open Pull Requests
+- ✅ Watch automated deployments happen in real-time
+
+**Time commitment**: 60-90 minutes for the complete tutorial
+
+**Note**: All accounts are free and don't require payment information.
 
 ## The Big Picture
 
