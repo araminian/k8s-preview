@@ -2,6 +2,27 @@
 
 Time for the exciting part - let's create a Pull Request and watch ArgoCD automatically deploy your preview environment!
 
+## Enable GitHub Actions (IMPORTANT!)
+
+Before creating a Pull Request, you **must enable GitHub Actions** on your forked repository.
+
+**Why?** GitHub disables workflows on forked repositories by default for security reasons.
+
+### Enable Workflows
+
+1. **Go to your fork** on GitHub:
+   ```
+   https://github.com/YOUR-USERNAME/k8s-preview
+   ```
+
+2. **Click the "Actions" tab**
+
+3. **You'll see a message**: "Workflows aren't being run on this forked repository"
+
+4. **Click the green button**: "I understand my workflows, go ahead and enable them"
+
+That's it! GitHub Actions is now enabled and will run when you create a Pull Request.
+
 ## Make a Change to the Application
 
 Let's modify the TODO application to see the changes in our preview environment.

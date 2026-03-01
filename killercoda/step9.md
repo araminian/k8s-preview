@@ -67,27 +67,6 @@ EOF
 2. Line with `repoURL:`
 
 **Note**: Since your repository is public, ArgoCD doesn't need authentication to read it. The Pull Request generator will poll GitHub's public API.
-      source:
-        repoURL: https://github.com/YOUR-GITHUB-USERNAME/k8s-preview.git  # ⚠️ CHANGE THIS!
-        targetRevision: preview-{{.number}}
-        path: manifests/preview/{{.number}}
-        directory:
-          include: '{*.yml,*.yaml}'
-      destination:
-        server: https://kubernetes.default.svc
-        namespace: preview-{{.number}}-todo-app
-      syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
-        syncOptions:
-        - CreateNamespace=true
-EOF
-```{{copy}}
-
-**⚠️ IMPORTANT**: Replace `YOUR-GITHUB-USERNAME` with your actual GitHub username in **TWO places**:
-1. Line with `owner:`
-2. Line with `repoURL:`
 
 ## Understanding the ApplicationSet
 
