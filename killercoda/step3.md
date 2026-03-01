@@ -29,6 +29,12 @@ kubectl wait --for=condition=Ready pods --all -n argocd --timeout=300s
 
 ## Access ArgoCD UI
 
+First, let's expose ArgoCD server via NodePort for easy access in Killercoda:
+
+```bash
+kubectl patch svc argocd-server -n argocd --type='json' -p='[{"op":"replace","path":"/spec/type","value":"NodePort"},{"op":"add","path":"/spec/ports/0/nodePort","value":30081}]'
+```{{exec}}
+
 Get the initial admin password:
 
 ```bash
@@ -37,15 +43,15 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 
 **Note**: Save this password! You'll use it to log in to the ArgoCD UI.
 
-## Port Forward ArgoCD (Optional)
+Now you can access the ArgoCD UI:
 
-If you want to access the ArgoCD UI, you can port-forward:
+[Open ArgoCD UI]({{TRAFFIC_HOST1_30081}})
 
-```bash
-kubectl port-forward svc/argocd-server -n argocd 8080:443 &
-```{{exec}}
+Login with:
+- Username: `admin`
+- Password: (from the command above)
 
-The UI will be available at `https://localhost:8080` (username: `admin`, password: from the command above).
+**Note**: You may see a certificate warning - this is expected. Click "Advanced" and proceed.
 
 ## Verify ArgoCD Installation
 

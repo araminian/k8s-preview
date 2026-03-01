@@ -74,9 +74,38 @@ View the routing rules:
 kubectl get virtualservice -n preview-123-todo-app -o yaml
 ```{{exec}}
 
-Notice the two hosts:
-1. **PR URL**: `todo-123-pr.127.0.0.1.sslip.io` → Routes through KEDA
-2. **Commit URL**: `todo-123-pr-827f6a4.127.0.0.1.sslip.io` → Direct to pods
+## Wait for Pods to Be Ready
+
+The deployment will start with 1 replica. Let's wait for it to be ready:
+
+```bash
+kubectl wait --for=condition=ready pod -l app=todo-app -n preview-123-todo-app --timeout=120s
+```{{exec}}
+
+## Access the Preview Environment
+
+Now you can access the TODO app through the Istio Gateway exposed on NodePort 30080!
+
+**Access the PR URL:**
+
+[Open TODO App - PR URL]({{TRAFFIC_HOST1_30080}})
+
+You can also access it via command line:
+
+```bash
+curl -s http://localhost:30080 | grep -o "<title>.*</title>"
+```{{exec}}
+
+**Note**: The preview environment routes through KEDA's HTTP interceptor, which manages the auto-scaling.
+
+## Understanding the URLs
+
+In this tutorial environment, we're accessing via NodePort. In a real environment with proper DNS:
+
+1. **PR URL**: `todo-123-pr.example.com` → Routes through KEDA
+2. **Commit URL**: `todo-123-pr-827f6a4.example.com` → Direct to specific version
+
+Both URLs work through the same Gateway, but with different routing rules.
 
 ## Understanding the Deployment
 
@@ -85,7 +114,7 @@ The deployment starts with replicas set to 1, but KEDA will manage the scaling b
 Check the deployment details:
 
 ```bash
-kubectl get deployment -n preview-123-todo-app -o yaml | grep -A 5 "spec:"
+kubectl get deployment -n preview-123-todo-app
 ```{{exec}}
 
 ## What Happens Next?
@@ -97,4 +126,4 @@ kubectl get deployment -n preview-123-todo-app -o yaml | grep -A 5 "spec:"
 
 Let's test this in the next step!
 
-Your preview environment is now deployed and ready for testing!
+Your preview environment is now deployed and accessible!

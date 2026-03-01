@@ -147,23 +147,25 @@ Notice:
 
 ## Access ArgoCD UI
 
-Let's see this in the ArgoCD UI:
+Let's see this in the ArgoCD UI. Open it here:
 
-```bash
-kubectl port-forward svc/argocd-server -n argocd 8080:443 &
-```{{exec}}
+[Open ArgoCD UI]({{TRAFFIC_HOST1_30081}})
 
-Get the password:
+Get the password if you need it again:
 
 ```bash
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
 ```{{exec}}
 
-Visit https://localhost:8080 and log in with:
+Log in with:
 - Username: `admin`
 - Password: (from above)
 
-You'll see the `todo-app-preview-123` application!
+You'll see the `todo-app-preview-123` application! Click on it to explore:
+- The sync status
+- The resources deployed
+- The health of each component
+- A visual representation of the architecture
 
 ## Benefits of ApplicationSet
 

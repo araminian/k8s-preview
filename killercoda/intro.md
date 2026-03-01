@@ -28,4 +28,6 @@ This tutorial assumes you have:
 
 Preview environments allow developers to see their changes running in a real Kubernetes environment before merging. This tutorial is based on the KubeCon Amsterdam 2026 presentation.
 
+**Note**: In this interactive environment, services are exposed via NodePort and accessible through the tab navigation at the top right, or via the clickable links throughout the tutorial.
+
 Let's get started! 🎯
