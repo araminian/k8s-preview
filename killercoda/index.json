@@ -1,5 +1,5 @@
 {
-  "title": "Kubernetes Preview Environments with GitOps",
+  "title": "Cost Effective Preview Environments on Kubernetes",
   "description": "Learn how to create cost-effective preview environments on Kubernetes using ArgoCD, KEDA, and Istio",
   "details": {
     "intro": {
