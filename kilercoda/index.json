@@ -1,0 +1,72 @@
+{
+  "title": "Kubernetes Preview Environments with GitOps",
+  "description": "Learn how to create cost-effective preview environments on Kubernetes using ArgoCD, KEDA, and Istio",
+  "details": {
+    "intro": {
+      "text": "intro.md",
+      "background": "background.sh",
+      "foreground": "foreground.sh"
+    },
+    "steps": [
+      {
+        "title": "Understanding Preview Environments",
+        "text": "step1.md"
+      },
+      {
+        "title": "Setting Up the Kubernetes Cluster",
+        "text": "step2.md",
+        "verify": "verify-step2.sh"
+      },
+      {
+        "title": "Installing ArgoCD",
+        "text": "step3.md",
+        "verify": "verify-step3.sh"
+      },
+      {
+        "title": "Installing KEDA and HTTP Add-on",
+        "text": "step4.md",
+        "verify": "verify-step4.sh"
+      },
+      {
+        "title": "Setting Up Istio",
+        "text": "step5.md",
+        "verify": "verify-step5.sh"
+      },
+      {
+        "title": "Creating the Istio Gateway",
+        "text": "step6.md",
+        "verify": "verify-step6.sh"
+      },
+      {
+        "title": "Deploying a Preview Environment",
+        "text": "step7.md",
+        "verify": "verify-step7.sh"
+      },
+      {
+        "title": "Testing Auto-Scaling to Zero",
+        "text": "step8.md"
+      },
+      {
+        "title": "Understanding the Dual-URL Strategy",
+        "text": "step9.md"
+      },
+      {
+        "title": "Creating the ApplicationSet",
+        "text": "step10.md",
+        "verify": "verify-step10.sh"
+      }
+    ],
+    "finish": {
+      "text": "finish.md"
+    },
+    "assets": {
+      "host01": [
+        {"file": "*.yaml", "target": "/root/manifests"},
+        {"file": "values.yaml", "target": "/root/helm"}
+      ]
+    }
+  },
+  "backend": {
+    "imageid": "kubernetes-kubeadm-2nodes"
+  }
+}
